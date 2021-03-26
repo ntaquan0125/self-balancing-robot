@@ -162,12 +162,16 @@ static void i2c_init(void)
     SysCtlPeripheralEnable(SYSCTL_PERIPH_I2C0);
     SysCtlPeripheralReset(SYSCTL_PERIPH_I2C0);
     SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);
+
     GPIOPinConfigure(GPIO_PB2_I2C0SCL);
     GPIOPinConfigure(GPIO_PB3_I2C0SDA);
     GPIOPinTypeI2CSCL(GPIO_PORTB_BASE, GPIO_PIN_2);
     GPIOPinTypeI2C(GPIO_PORTB_BASE, GPIO_PIN_3);
+
     I2CMasterInitExpClk(I2C0_BASE, SysCtlClockGet(), false);
     HWREG(I2C0_BASE + I2C_O_FIFOCTL) = 80008000;
+
+    SysCtlDelay(100);
 }
 
 static void i2c_write(uint8_t dev_addr, uint8_t reg_addr, uint8_t *data, uint8_t len)
@@ -323,12 +327,12 @@ void MPU6050_calib(MPU6050_t *mpu6050)
 		temp_gyro[2] += raw_data.gyro_Z;
 	}
 
-	mpu6050->accel_X = mpu6050->accel_bias[0] = temp_accel[0] / 256;
-	mpu6050->accel_Y = mpu6050->accel_bias[1] = temp_accel[1] / 256;
-	mpu6050->accel_Z = mpu6050->accel_bias[2] = temp_accel[2] / 256;
-	mpu6050->gyro_X = mpu6050->gyro_bias[0] = temp_gyro[0] / 256;
-	mpu6050->gyro_Y = mpu6050->gyro_bias[1] = temp_gyro[1] / 256;
-	mpu6050->gyro_Z = mpu6050->gyro_bias[2] = temp_gyro[2] / 256;
+	mpu6050->accel_bias[0] = temp_accel[0] / 256;
+	mpu6050->accel_bias[1] = temp_accel[1] / 256;
+	mpu6050->accel_bias[2] = temp_accel[2] / 256;
+	mpu6050->gyro_bias[0] = temp_gyro[0] / 256;
+	mpu6050->gyro_bias[1] = temp_gyro[1] / 256;
+	mpu6050->gyro_bias[2] = temp_gyro[2] / 256;
 }
 
 float Kalman_filter(Kalman_t *Kalman, float newAngle, float newRate)
@@ -372,6 +376,7 @@ void imu_handle(void *param)
 
     float roll_rate = mpu6050->gyro_X * IMU_PERIOD * 0.001;
     float pitch_rate = mpu6050->gyro_Y * IMU_PERIOD * 0.001;
+    float yaw_rate = mpu6050->gyro_Z * IMU_PERIOD * 0.001;
 
     #ifndef KALMAN_FILTER
         mpu6050->roll = alpha * (mpu6050->roll + roll_rate) + (1 - alpha) * accel_roll;
@@ -380,4 +385,5 @@ void imu_handle(void *param)
         mpu6050->roll = Kalman_filter(&kalman_roll, accel_roll, roll_rate);
         mpu6050->pitch = Kalman_filter(&kalman_pitch, accel_pitch, pitch_rate);
     #endif
+        mpu6050->yaw = mpu6050->yaw + yaw_rate;
 }

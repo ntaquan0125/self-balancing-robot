@@ -9,11 +9,8 @@
 
 #include "driverlib/sysctl.h"
 
-#include "motor.h"
+#include "robot.h"
 #include "user_config.h"
-
-int32_t count;
-float vel;
 
 int main(void)
 {
@@ -23,7 +20,6 @@ int main(void)
     robot_test();
     while(1)
     {
-//        motor_l(500);
 //        count = QEI_get_count(MOTOR_L);
 //        vel = QEI_get_velocity(MOTOR_L);
     }

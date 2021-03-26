@@ -11,8 +11,8 @@
 
 #define KALMAN_FILTER
 
-#define ENC_PERIOD 100
-#define IMU_PERIOD 100
+#define ENC_PERIOD 50
+#define IMU_PERIOD 50
 #define TILT_PERIOD 100
 #define TILT_REPORT_PERIOD 100
 #define VEL_PERIOD 100

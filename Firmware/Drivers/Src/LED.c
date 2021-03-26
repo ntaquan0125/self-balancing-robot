@@ -39,3 +39,21 @@ void set_led(led_t led, led_state_t state)
         break;
     }
 }
+
+void toggle_led(led_t led)
+{
+    switch (led)
+    {
+    case LED_RED:
+        GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_1, ~GPIOPinRead(GPIO_PORTF_BASE, GPIO_PIN_1));
+        break;
+
+    case LED_BLUE:
+        GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_2, ~GPIOPinRead(GPIO_PORTF_BASE, GPIO_PIN_2));
+        break;
+
+    case LED_GREEN:
+        GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_3, ~GPIOPinRead(GPIO_PORTF_BASE, GPIO_PIN_3));
+        break;
+    }
+}

@@ -19,16 +19,15 @@
 #include "serial.h"
 
 extern params_t robot_params;
+
+// Private variables
 static char Rx_buf[20];
 
+// Private functions
 static void UART_ISR(void);
 
 void uart_init(uint32_t baudrate)
 {
-    if(!SysCtlPeripheralPresent(SYSCTL_PERIPH_UART1))
-    {
-        return;
-    }
     SysCtlPeripheralEnable(SYSCTL_PERIPH_UART1);
     SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);
     GPIOPinConfigure(GPIO_PB0_U1RX);
@@ -39,6 +38,8 @@ void uart_init(uint32_t baudrate)
     UARTIntEnable(UART1_BASE, UART_INT_RX | UART_INT_RT);
     UARTIntRegister(UART1_BASE, &UART_ISR);
     IntEnable(INT_UART1);
+
+    SysCtlDelay(100);
 }
 
 static void UART_ISR(void)

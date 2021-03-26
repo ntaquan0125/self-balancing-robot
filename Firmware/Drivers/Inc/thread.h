@@ -31,6 +31,7 @@ typedef struct {
 thread_t threads[MAX_THREAD];
 
 // Function prototypes
+void thread_init(void);
 thread_id_t register_thread(thread_func_t thread_func, uint16_t period, void* context, thread_type_t type);
 bool unregister_thread(thread_id_t id);
 void run_thread(void);

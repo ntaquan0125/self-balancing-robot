@@ -20,5 +20,6 @@ typedef enum {
 // Function prototypes
 void led_init(void);
 void set_led(led_t led, led_state_t state);
+void toggle_led(led_t led);
 
 #endif /* INC_LED_H_ */

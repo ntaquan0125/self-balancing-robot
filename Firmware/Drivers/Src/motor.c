@@ -3,9 +3,9 @@
  *
  */
 
-#include <math.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdlib.h>
 
 #include "driverlib/gpio.h"
 #include "driverlib/pin_map.h"
@@ -21,6 +21,10 @@
 #include "motor.h"
 
 static uint32_t Period;
+
+// Private functions
+static void motor_l(int32_t speed);
+static void motor_r(int32_t speed);
 
 void motor_init(void)
 {
@@ -40,44 +44,41 @@ void motor_init(void)
     GPIOPinTypeGPIOOutput(GPIO_PORTD_BASE, GPIO_PIN_2 | GPIO_PIN_3);
     GPIOPinTypeGPIOOutput(GPIO_PORTE_BASE, GPIO_PIN_1 | GPIO_PIN_2);
     GPIOPinWrite(GPIO_PORTD_BASE, GPIO_PIN_2, ~GPIO_PIN_2);
-    GPIOPinWrite(GPIO_PORTE_BASE, GPIO_PIN_2, ~GPIO_PIN_2);
     GPIOPinWrite(GPIO_PORTD_BASE, GPIO_PIN_3, ~GPIO_PIN_3);
     GPIOPinWrite(GPIO_PORTE_BASE, GPIO_PIN_1, ~GPIO_PIN_1);
+    GPIOPinWrite(GPIO_PORTE_BASE, GPIO_PIN_2, ~GPIO_PIN_2);
+
     SysCtlDelay(100);
 }
 
-void motor_l(int32_t speed)
+static void motor_l(int32_t speed)
 {
     if (speed > 0)
     {
-        GPIOPinWrite(GPIO_PORTD_BASE, GPIO_PIN_0, 0xFF);
-        GPIOPinWrite(GPIO_PORTD_BASE, GPIO_PIN_1, 0x00);
+        GPIOPinWrite(GPIO_PORTD_BASE, GPIO_PIN_2, GPIO_PIN_2);
         PWMPulseWidthSet(MOTOR_L_TIM, PWM_OUT_6, speed);
         PWMOutputState(MOTOR_L_TIM, PWM_OUT_6_BIT, true);
     }
     else
     {
-        GPIOPinWrite(GPIO_PORTD_BASE, GPIO_PIN_0, 0x00);
-        GPIOPinWrite(GPIO_PORTD_BASE, GPIO_PIN_1, 0xFF);
-        PWMPulseWidthSet(MOTOR_L_TIM, PWM_OUT_6, abs(speed));
+        GPIOPinWrite(GPIO_PORTD_BASE, GPIO_PIN_2, ~GPIO_PIN_2);
+        PWMPulseWidthSet(MOTOR_L_TIM, PWM_OUT_6, 1000 - abs(speed));
         PWMOutputState(MOTOR_L_TIM, PWM_OUT_6_BIT, true);
     }
 }
 
-void motor_r(int32_t speed)
+static void motor_r(int32_t speed)
 {
     if (speed > 0)
     {
-        GPIOPinWrite(GPIO_PORTE_BASE, GPIO_PIN_1, 0x00);
-        GPIOPinWrite(GPIO_PORTE_BASE, GPIO_PIN_2, 0xFF);
+        GPIOPinWrite(GPIO_PORTE_BASE, GPIO_PIN_1, GPIO_PIN_1);
         PWMPulseWidthSet(MOTOR_R_TIM, PWM_OUT_7, speed);
         PWMOutputState(MOTOR_R_TIM, PWM_OUT_7_BIT, true);
     }
     else
     {
-        GPIOPinWrite(GPIO_PORTE_BASE, GPIO_PIN_1, 0xFF);
-        GPIOPinWrite(GPIO_PORTE_BASE, GPIO_PIN_2, 0x00);
-        PWMPulseWidthSet(MOTOR_R_TIM, PWM_OUT_7, abs(speed));
+        GPIOPinWrite(GPIO_PORTE_BASE, GPIO_PIN_1, ~GPIO_PIN_1);
+        PWMPulseWidthSet(MOTOR_R_TIM, PWM_OUT_7, 1000 - abs(speed));
         PWMOutputState(MOTOR_R_TIM, PWM_OUT_7_BIT, true);
     }
 }

@@ -34,16 +34,18 @@ void QEI_init(void)
     SysCtlPeripheralEnable(SYSCTL_PERIPH_QEI0);
     SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOD);
 
+    //Unlock GPIOD7 - Like PF0 its used for NMI - Without this step it doesn't work
     HWREG(GPIO_PORTD_BASE + GPIO_O_LOCK) = GPIO_LOCK_KEY;
     HWREG(GPIO_PORTD_BASE + GPIO_O_CR) = 0x80;
     HWREG(GPIO_PORTD_BASE + GPIO_O_AFSEL) &= ~0x80;
 
-    QEIConfigure(QEI0_BASE, QEI_CONFIG_CAPTURE_A_B | QEI_CONFIG_NO_RESET | QEI_CONFIG_QUADRATURE | QEI_CONFIG_NO_SWAP, 0xffffffff);
-    GPIOPinTypeQEI(GPIO_PORTD_BASE, GPIO_PIN_3 | GPIO_PIN_6 | GPIO_PIN_7);
-
+    //Set Pins to be PHA0 and PHB0
     GPIOPinConfigure(GPIO_PD6_PHA0);
     GPIOPinConfigure(GPIO_PD7_PHB0);
     GPIOPinConfigure(GPIO_PD3_IDX0);
+    GPIOPinTypeQEI(GPIO_PORTD_BASE, GPIO_PIN_3 | GPIO_PIN_6 | GPIO_PIN_7);
+
+    QEIConfigure(QEI0_BASE, QEI_CONFIG_CAPTURE_A_B | QEI_CONFIG_NO_RESET | QEI_CONFIG_QUADRATURE | QEI_CONFIG_NO_SWAP, 0xffffffff);
 
     QEIVelocityConfigure(QEI0_BASE, QEI_VELDIV_1, SysCtlClockGet()/50);
     QEIVelocityEnable(QEI0_BASE);
@@ -59,12 +61,12 @@ void QEI_init(void)
     SysCtlPeripheralEnable(SYSCTL_PERIPH_QEI1);
     SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOC);
 
-    QEIConfigure(QEI1_BASE, QEI_CONFIG_CAPTURE_A_B | QEI_CONFIG_NO_RESET | QEI_CONFIG_QUADRATURE | QEI_CONFIG_NO_SWAP, 0xffffffff);
-    GPIOPinTypeQEI(GPIO_PORTC_BASE, GPIO_PIN_4 |GPIO_PIN_5 | GPIO_PIN_6);
-
     GPIOPinConfigure(GPIO_PC5_PHA1);
     GPIOPinConfigure(GPIO_PC6_PHB1);
     GPIOPinConfigure(GPIO_PC4_IDX1);
+    GPIOPinTypeQEI(GPIO_PORTC_BASE, GPIO_PIN_4 |GPIO_PIN_5 | GPIO_PIN_6);
+
+    QEIConfigure(QEI1_BASE, QEI_CONFIG_CAPTURE_A_B | QEI_CONFIG_NO_RESET | QEI_CONFIG_QUADRATURE | QEI_CONFIG_NO_SWAP, 0xffffffff);
 
     QEIVelocityConfigure(QEI1_BASE, QEI_VELDIV_1, SysCtlClockGet()/50);
     QEIVelocityEnable(QEI1_BASE);

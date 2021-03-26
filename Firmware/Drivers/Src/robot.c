@@ -5,7 +5,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-#include <stdlib.h>
+#include <string.h>
 
 #include "driverlib/flash.h"
 
@@ -18,6 +18,8 @@ static uint32_t address;
 
 // Private functions
 static void read(uint32_t* ptr);
+static void write(uint32_t *ptr);
+static void led_handle(void *param);
 static void encoder_handle(void *param);
 static void tilt_handle(void *param);
 static void tilt_report_handle(void *param);
@@ -29,7 +31,8 @@ void robot_init(void)
     led_init();
     uart_init(UART_BAUD);
 
-//    MPU6050_init();
+    thread_init();
+    MPU6050_init();
     robot_params.imu.gyro_X = -1;
     robot_params.imu.gyro_Y = 0;
     robot_params.imu.gyro_Z = 1;
@@ -38,30 +41,38 @@ void robot_init(void)
     PID_init(&robot_params.pid_tilt, TILT_PERIOD * 0.001, 1000, 1000);
     PID_init(&robot_params.pid_vel, VEL_PERIOD * 0.001, 1000, 1000);
 
+//    load_params(&robot_params);
+//    MPU6050_calib(&robot_params.imu);
+    register_thread(led_handle, 1000, NULL, THREAD_REPEAT);
     register_thread(encoder_handle, ENC_PERIOD, NULL, THREAD_REPEAT);
     register_thread(imu_handle, IMU_PERIOD, (void *)&robot_params.imu, THREAD_REPEAT);
-    register_thread(tilt_handle, TILT_PERIOD, NULL, THREAD_REPEAT);
+//    register_thread(tilt_handle, TILT_PERIOD, NULL, THREAD_REPEAT);
     register_thread(tilt_report_handle, TILT_REPORT_PERIOD, NULL, THREAD_REPEAT);
-    register_thread(velocity_handle, VEL_PERIOD, NULL, THREAD_REPEAT);
-    register_thread(velocity_report_handle, VEL_REPORT_PERIOD, NULL, THREAD_REPEAT);
+//    register_thread(velocity_handle, VEL_PERIOD, NULL, THREAD_REPEAT);
+//    register_thread(velocity_report_handle, VEL_REPORT_PERIOD, NULL, THREAD_REPEAT);
 }
 
 void robot_test(void)
 {
-
-}
-
-void save_params(params_t *params)
-{
-    FlashProtectSet(SAVE_ADDR, FlashReadWrite);
-    FlashErase(SAVE_ADDR);
-    params->is_saved = true;
-    FlashProgram((uint32_t *)params, SAVE_ADDR, sizeof(params_t));
+//    set_led(LED_GREEN, LED_ON);
+    robot_params.pid_tilt.Kp = 5;
+    robot_params.pid_tilt.Ki = 10;
+    robot_params.pid_tilt.Kd = 15;
+    robot_params.pid_vel.Kp = 20;
+    robot_params.pid_vel.Ki = 25;
+    robot_params.pid_vel.Kd = 30;
 }
 
 static void read(uint32_t* ptr)
 {
     *ptr = *((volatile uint32_t*)address);
+    address += 4;
+}
+
+static void write(uint32_t *ptr)
+{
+    FlashProtectSet(address, FlashReadWrite);
+    FlashProgram(ptr, address, sizeof(ptr));
     address += 4;
 }
 
@@ -73,25 +84,12 @@ bool load_params(params_t *params)
     {
         return false;
     }
-    read((uint32_t *)&params->imu.accel_X);
-    read((uint32_t *)&params->imu.accel_Y);
-    read((uint32_t *)&params->imu.accel_Z);
-    read((uint32_t *)&params->imu.gyro_X);
-    read((uint32_t *)&params->imu.gyro_Y);
-    read((uint32_t *)&params->imu.gyro_Z);
-    read((uint32_t *)&params->imu.roll);
-    read((uint32_t *)&params->imu.pitch);
-    read((uint32_t *)&params->imu.yaw);
-    read((uint32_t *)&params->imu.gyro_bias[0]);
-    read((uint32_t *)&params->imu.gyro_bias[1]);
-    read((uint32_t *)&params->imu.gyro_bias[2]);
-    read((uint32_t *)&params->imu.accel_bias[0]);
-    read((uint32_t *)&params->imu.accel_bias[1]);
-    read((uint32_t *)&params->imu.accel_bias[2]);
-    read((uint32_t *)&params->position[0]);
-    read((uint32_t *)&params->position[1]);
-    read((uint32_t *)&params->velocity[0]);
-    read((uint32_t *)&params->velocity[1]);
+//    read((uint32_t *)&params->imu.gyro_bias[0]);
+//    read((uint32_t *)&params->imu.gyro_bias[1]);
+//    read((uint32_t *)&params->imu.gyro_bias[2]);
+//    read((uint32_t *)&params->imu.accel_bias[0]);
+//    read((uint32_t *)&params->imu.accel_bias[1]);
+//    read((uint32_t *)&params->imu.accel_bias[2]);
     read((uint32_t *)&params->pid_tilt.Kp);
     read((uint32_t *)&params->pid_tilt.Ki);
     read((uint32_t *)&params->pid_tilt.Kd);
@@ -100,6 +98,26 @@ bool load_params(params_t *params)
     read((uint32_t *)&params->pid_vel.Kd);
 
     return true;
+}
+
+void save_params(params_t *params)
+{
+    FlashErase(address);
+    address = SAVE_ADDR;
+    params->is_saved = true;
+    write((uint32_t *)params->is_saved);
+//    write((uint32_t *)&params->imu.gyro_bias[0]);
+//    write((uint32_t *)&params->imu.gyro_bias[1]);
+//    write((uint32_t *)&params->imu.gyro_bias[2]);
+//    write((uint32_t *)&params->imu.accel_bias[0]);
+//    write((uint32_t *)&params->imu.accel_bias[1]);
+//    write((uint32_t *)&params->imu.accel_bias[2]);
+    write((uint32_t *)&params->pid_tilt.Kp);
+    write((uint32_t *)&params->pid_tilt.Ki);
+    write((uint32_t *)&params->pid_tilt.Kd);
+    write((uint32_t *)&params->pid_vel.Kp);
+    write((uint32_t *)&params->pid_vel.Ki);
+    write((uint32_t *)&params->pid_vel.Kd);
 }
 
 bool message_check(char *msg)
@@ -167,21 +185,16 @@ bool message_decode(char *msg, params_t* params)
         params->pid_vel.Kp = *(float *)&msg[3];
         params->pid_vel.Ki = *(float *)&msg[7];
         params->pid_vel.Kd = *(float *)&msg[11];
+//        save_params(params);
         break;
 
     case SAVE_LOAD_PARAMS:
-        if (msg[3])
-        {
-            save_params(params);
-        }
-        else
-        {
-            load_params(params);
-            len = message_pack(Tx_data, PID_TILT, *params);
-            uart_send(Tx_data, len);
-            len = message_pack(Tx_data, PID_VEL, *params);
-            uart_send(Tx_data, len);
-        }
+        set_led(LED_BLUE, LED_ON);
+//        load_params(params);
+        len = message_pack(Tx_data, PID_TILT, *params);
+        uart_send(Tx_data, len);
+        len = message_pack(Tx_data, PID_VEL, *params);
+        uart_send(Tx_data, len);
         break;
 
     default:
@@ -277,6 +290,14 @@ uint8_t message_pack(char *msg, msg_id_t msg_id, params_t params)
     return msg_len;
 }
 
+static void led_handle(void *param)
+{
+    if (robot_params.is_saved)
+    {
+        toggle_led(LED_RED);
+    }
+}
+
 static void encoder_handle(void *param)
 {
     robot_params.position[0] = QEI_get_count(MOTOR_L);
@@ -297,18 +318,27 @@ static void tilt_handle(void *param)
 static void tilt_report_handle(void *param)
 {
     char Tx_data[20];
-    uint16_t len = message_pack(Tx_data, PID_TILT, robot_params);
+    uint16_t len;
+    len = message_pack(Tx_data, IMU_GYRO, robot_params);
+    uart_send(Tx_data, len);
+    len = message_pack(Tx_data, IMU_ACCEL, robot_params);
+    uart_send(Tx_data, len);
+    len = message_pack(Tx_data, IMU_RPY, robot_params);
     uart_send(Tx_data, len);
 }
 
 static void velocity_handle(void *param)
 {
-
+    robot_params.velocity[0] = 31;
+    robot_params.velocity[1] = 30;
 }
 
 static void velocity_report_handle(void *param)
 {
     char Tx_data[20];
-    uint16_t len = message_pack(Tx_data, PID_VEL, robot_params);
+    uint16_t len;
+    len = message_pack(Tx_data, MOTOR_POS, robot_params);
+    uart_send(Tx_data, len);
+    len = message_pack(Tx_data, MOTOR_VEL, robot_params);
     uart_send(Tx_data, len);
 }
